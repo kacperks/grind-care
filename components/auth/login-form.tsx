@@ -29,12 +29,24 @@ export function LoginForm() {
         window.location.href = '/today'
       }
     } else {
-      const { error } = await supabase.auth.signUp({ email, password })
-      if (error) {
-        setError(error.message)
+      // Use server-side admin route so no confirmation email is sent (avoids rate limits).
+      const res = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      })
+      const json = await res.json()
+      if (!res.ok) {
+        setError(json.error ?? 'Signup failed.')
       } else {
-        setSuccess('Account created! You can now log in.')
-        setMode('login')
+        // Sign in immediately after account creation.
+        const { error: loginError } = await supabase.auth.signInWithPassword({ email, password })
+        if (loginError) {
+          setSuccess('Account created! Please sign in.')
+          setMode('login')
+        } else {
+          window.location.href = '/today'
+        }
       }
     }
 
