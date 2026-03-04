@@ -13,6 +13,13 @@ export function LoginForm() {
   const [error, setError] = useState('')
   const supabase = createClient()
 
+  // Use the explicit app URL env var so auth redirects work on Vercel.
+  // Falls back to window.location.origin for local dev.
+  function getRedirectUrl() {
+    const base = process.env.NEXT_PUBLIC_APP_URL ?? window.location.origin
+    return `${base}/auth/callback`
+  }
+
   async function handleMagicLink(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
@@ -20,9 +27,7 @@ export function LoginForm() {
 
     const { error } = await supabase.auth.signInWithOtp({
       email,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-      },
+      options: { emailRedirectTo: getRedirectUrl() },
     })
 
     setLoading(false)
@@ -36,7 +41,7 @@ export function LoginForm() {
   async function handleGoogle() {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
+      options: { redirectTo: getRedirectUrl() },
     })
   }
 
